@@ -1,0 +1,108 @@
+{% extends "layout.html" %}
+
+{% block title %}Tech Analysis Tool - Home{% endblock %}
+
+{% block header_title %}Welcome to Tech Analysis Tool{% endblock %}
+
+{% block content %}
+<div class="home-page">
+    <div class="hero-section">
+        <div class="hero-content">
+            <h1>Analyze, Compare, Present</h1>
+            <p class="lead">Powerful tools for technology analysis and presentation</p>
+            <div class="hero-buttons">
+                <a href="{{ url_for('compare') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-balance-scale"></i> Compare Technologies
+                </a>
+                <a href="{{ url_for('video_to_slides') }}" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-film"></i> Video to Slides
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="features-section">
+        <h2>Features</h2>
+        <div class="feature-cards">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-balance-scale"></i>
+                </div>
+                <h3>Technology Comparison</h3>
+                <p>Compare images and PDFs side-by-side with powerful analysis tools.</p>
+                <ul>
+                    <li>Upload files or use URLs</li>
+                    <li>Visualize differences</li>
+                    <li>Get detailed comparison metrics</li>
+                    <li>Save and share your analyses</li>
+                </ul>
+                <a href="{{ url_for('compare') }}" class="feature-link">Try It Now</a>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-film"></i>
+                </div>
+                <h3>Video to Presentation</h3>
+                <p>Transform YouTube videos into polished presentation slides with AI.</p>
+                <ul>
+                    <li>Extract key points automatically</li>
+                    <li>Generate professional slides</li>
+                    <li>Customize before exporting</li>
+                    <li>Share presentations easily</li>
+                </ul>
+                <a href="{{ url_for('video_to_slides') }}" class="feature-link">Try It Now</a>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <h3>Secure Account</h3>
+                <p>Create an account to save your work and access from anywhere.</p>
+                <ul>
+                    <li>Save comparison results</li>
+                    <li>Manage your slide decks</li>
+                    <li>Access history</li>
+                    <li>Dark/light theme options</li>
+                </ul>
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('dashboard') }}" class="feature-link">Dashboard</a>
+                {% else %}
+                <a href="{{ url_for('replit_auth.login') }}" class="feature-link">Sign In</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="how-it-works-section">
+        <h2>How It Works</h2>
+        <div class="workflow-steps">
+            <div class="workflow-step">
+                <div class="step-number">1</div>
+                <h3>Upload or Link</h3>
+                <p>Upload your documents or provide URLs to videos you want to analyze.</p>
+            </div>
+            <div class="workflow-step">
+                <div class="step-number">2</div>
+                <h3>Analyze</h3>
+                <p>Our tools automatically process and analyze your content.</p>
+            </div>
+            <div class="workflow-step">
+                <div class="step-number">3</div>
+                <h3>Review Results</h3>
+                <p>Examine the detailed analysis results with helpful visualizations.</p>
+            </div>
+            <div class="workflow-step">
+                <div class="step-number">4</div>
+                <h3>Save & Share</h3>
+                <p>Save your results to your account and share with others.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Any additional scripts for the home page -->
+{% endblock %}

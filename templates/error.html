@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+
+{% block title %}Error - Tech Analysis Tool{% endblock %}
+
+{% block header_title %}Error{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <div class="error-container">
+        <div class="error-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h2>{{ error or 'An error occurred' }}</h2>
+        <p>Sorry, we encountered a problem. Please try again or contact support if the issue persists.</p>
+        <div class="error-actions">
+            <a href="{{ url_for('index') }}" class="btn btn-primary">Go to Home</a>
+            <button class="btn btn-outline-secondary" onclick="history.back()">Go Back</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

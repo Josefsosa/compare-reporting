@@ -1,0 +1,376 @@
+{% extends "layout.html" %}
+
+{% block title %}Dashboard - Tech Analysis Tool{% endblock %}
+
+{% block header_title %}Your Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-page">
+    <div class="dashboard-header">
+        <h2>Welcome, {{ current_user.first_name or 'User' }}</h2>
+        <p class="text-muted">Manage your saved comparisons and presentations</p>
+    </div>
+    
+    <div class="dashboard-tabs">
+        <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="comparisons-tab" data-bs-toggle="tab" data-bs-target="#comparisons" type="button" role="tab" aria-controls="comparisons" aria-selected="true">
+                    <i class="fas fa-balance-scale"></i> Saved Comparisons
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="slides-tab" data-bs-toggle="tab" data-bs-target="#slides" type="button" role="tab" aria-controls="slides" aria-selected="false">
+                    <i class="fas fa-film"></i> Slide Decks
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="dashboardTabsContent">
+            <!-- Saved Comparisons Tab -->
+            <div class="tab-pane fade show active" id="comparisons" role="tabpanel" aria-labelledby="comparisons-tab">
+                {% if comparisons %}
+                <div class="dashboard-items">
+                    {% for comparison in comparisons %}
+                    <div class="dashboard-item">
+                        <div class="item-header">
+                            <h3>{{ comparison.title }}</h3>
+                            <div class="item-date">
+                                <i class="far fa-calendar-alt"></i> {{ comparison.created_at.strftime('%b %d, %Y') }}
+                            </div>
+                        </div>
+                        
+                        <div class="item-description">
+                            {% if comparison.description %}
+                            <p>{{ comparison.description }}</p>
+                            {% else %}
+                            <p class="text-muted">No description provided</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="item-documents">
+                            <div class="document-item">
+                                <i class="{% if comparison.document_a_type == 'image' %}fas fa-image{% else %}fas fa-file-pdf{% endif %}"></i>
+                                <span>{{ comparison.document_a_name }}</span>
+                            </div>
+                            <div class="document-comparison">vs</div>
+                            <div class="document-item">
+                                <i class="{% if comparison.document_b_type == 'image' %}fas fa-image{% else %}fas fa-file-pdf{% endif %}"></i>
+                                <span>{{ comparison.document_b_name }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="item-actions">
+                            <a href="#" class="btn btn-primary btn-sm view-comparison" data-id="{{ comparison.id }}">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <button class="btn btn-outline-secondary btn-sm share-comparison" data-id="{{ comparison.id }}">
+                                <i class="fas fa-share-alt"></i> Share
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm delete-comparison" data-id="{{ comparison.id }}">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-balance-scale"></i>
+                    </div>
+                    <h3>No Saved Comparisons</h3>
+                    <p>You haven't saved any comparisons yet.</p>
+                    <a href="{{ url_for('compare') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Comparison
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Slide Decks Tab -->
+            <div class="tab-pane fade" id="slides" role="tabpanel" aria-labelledby="slides-tab">
+                {% if decks %}
+                <div class="dashboard-items">
+                    {% for deck in decks %}
+                    <div class="dashboard-item">
+                        <div class="item-header">
+                            <h3>{{ deck.title }}</h3>
+                            <div class="item-status {% if deck.status == 'completed' %}status-success{% elif deck.status == 'failed' %}status-danger{% else %}status-pending{% endif %}">
+                                {% if deck.status == 'pending' %}
+                                <i class="fas fa-clock"></i> Pending
+                                {% elif deck.status == 'processing' %}
+                                <i class="fas fa-spinner fa-spin"></i> Processing
+                                {% elif deck.status == 'completed' %}
+                                <i class="fas fa-check"></i> Completed
+                                {% else %}
+                                <i class="fas fa-times"></i> Failed
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="item-date">
+                            <i class="far fa-calendar-alt"></i> {{ deck.created_at.strftime('%b %d, %Y') }}
+                        </div>
+                        
+                        <div class="item-description">
+                            {% if deck.description %}
+                            <p>{{ deck.description }}</p>
+                            {% else %}
+                            <p class="text-muted">No description provided</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="item-video">
+                            <div class="video-info">
+                                <i class="fab fa-youtube"></i>
+                                <span>{{ deck.video_title or 'YouTube Video' }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="item-actions">
+                            {% if deck.status == 'completed' %}
+                            <a href="#" class="btn btn-primary btn-sm view-slides" data-id="{{ deck.id }}">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <button class="btn btn-outline-secondary btn-sm download-slides" data-id="{{ deck.id }}">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                            {% elif deck.status == 'failed' %}
+                            <button class="btn btn-outline-primary btn-sm retry-processing" data-id="{{ deck.id }}">
+                                <i class="fas fa-redo"></i> Retry
+                            </button>
+                            {% else %}
+                            <button class="btn btn-outline-secondary btn-sm" disabled>
+                                <i class="fas fa-spinner fa-spin"></i> Processing
+                            </button>
+                            {% endif %}
+                            <button class="btn btn-outline-danger btn-sm delete-slides" data-id="{{ deck.id }}">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-film"></i>
+                    </div>
+                    <h3>No Slide Decks</h3>
+                    <p>You haven't created any slide decks yet.</p>
+                    <a href="{{ url_for('video_to_slides') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Slide Deck
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="delete-confirmation-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this item? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-btn">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Delete confirmation handling
+    const deleteConfirmationModal = new bootstrap.Modal(document.getElementById('delete-confirmation-modal'));
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+    
+    let itemToDelete = null;
+    let itemType = null;
+    
+    // Set up delete handlers for comparisons
+    document.querySelectorAll('.delete-comparison').forEach(button => {
+        button.addEventListener('click', function() {
+            itemToDelete = this.getAttribute('data-id');
+            itemType = 'comparison';
+            deleteConfirmationModal.show();
+        });
+    });
+    
+    // Set up delete handlers for slide decks
+    document.querySelectorAll('.delete-slides').forEach(button => {
+        button.addEventListener('click', function() {
+            itemToDelete = this.getAttribute('data-id');
+            itemType = 'slidedeck';
+            deleteConfirmationModal.show();
+        });
+    });
+    
+    // Handle delete confirmation
+    confirmDeleteBtn.addEventListener('click', function() {
+        if (!itemToDelete || !itemType) {
+            return;
+        }
+        
+        const endpoint = itemType === 'comparison' ? 
+                        `/delete-comparison/${itemToDelete}` : 
+                        `/delete-slide-deck/${itemToDelete}`;
+        
+        // Send delete request
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove the item from the DOM
+                const itemElement = document.querySelector(`[data-id="${itemToDelete}"]`).closest('.dashboard-item');
+                itemElement.remove();
+                
+                // Show success message
+                alert('Item deleted successfully');
+                
+                // Check if there are no more items
+                const container = document.querySelector(itemType === 'comparison' ? '#comparisons .dashboard-items' : '#slides .dashboard-items');
+                if (container && container.children.length === 0) {
+                    // Show empty state
+                    const emptyState = `
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-${itemType === 'comparison' ? 'balance-scale' : 'film'}"></i>
+                            </div>
+                            <h3>No ${itemType === 'comparison' ? 'Saved Comparisons' : 'Slide Decks'}</h3>
+                            <p>You haven't ${itemType === 'comparison' ? 'saved any comparisons' : 'created any slide decks'} yet.</p>
+                            <a href="${itemType === 'comparison' ? '/compare' : '/video-to-slides'}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create ${itemType === 'comparison' ? 'Comparison' : 'Slide Deck'}
+                            </a>
+                        </div>
+                    `;
+                    const tabPane = document.querySelector(itemType === 'comparison' ? '#comparisons' : '#slides');
+                    tabPane.innerHTML = emptyState;
+                }
+            } else {
+                // Show error message
+                alert('Error deleting item: ' + (data.error || 'Unknown error'));
+            }
+            
+            // Close modal
+            deleteConfirmationModal.hide();
+            
+            // Reset state
+            itemToDelete = null;
+            itemType = null;
+        })
+        .catch(error => {
+            console.error('Error deleting item:', error);
+            alert('Error deleting item. Please try again.');
+            deleteConfirmationModal.hide();
+        });
+    });
+    
+    // Handle view comparisons
+    document.querySelectorAll('.view-comparison').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const id = this.getAttribute('data-id');
+            window.location.href = `/view-comparison/${id}`;
+        });
+    });
+    
+    // Handle view slide decks
+    document.querySelectorAll('.view-slides').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const id = this.getAttribute('data-id');
+            window.location.href = `/view-slide-deck/${id}`;
+        });
+    });
+    
+    // Handle retry processing
+    document.querySelectorAll('.retry-processing').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            
+            // Send retry request
+            fetch(`/retry-processing/${id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update UI to show processing
+                    const actionsContainer = this.closest('.item-actions');
+                    actionsContainer.innerHTML = `
+                        <button class="btn btn-outline-secondary btn-sm" disabled>
+                            <i class="fas fa-spinner fa-spin"></i> Processing
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm delete-slides" data-id="${id}">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    `;
+                    
+                    // Update status
+                    const statusElement = this.closest('.dashboard-item').querySelector('.item-status');
+                    statusElement.className = 'item-status status-pending';
+                    statusElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing';
+                    
+                    // Show success message
+                    alert('Processing started. Refresh the page to see updates.');
+                } else {
+                    // Show error message
+                    alert('Error starting processing: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error starting processing:', error);
+                alert('Error starting processing. Please try again.');
+            });
+        });
+    });
+    
+    // Handle download slide decks
+    document.querySelectorAll('.download-slides').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            window.location.href = `/download-slide-deck/${id}`;
+        });
+    });
+    
+    // Handle share comparisons
+    document.querySelectorAll('.share-comparison').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Technology Comparison',
+                    text: 'Check out this technology comparison I created!',
+                    url: `${window.location.origin}/view-comparison/${id}`
+                })
+                .catch(error => console.log('Error sharing:', error));
+            } else {
+                // Fallback for browsers that don't support the Web Share API
+                const shareUrl = `${window.location.origin}/view-comparison/${id}`;
+                prompt('Copy this link to share your comparison:', shareUrl);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

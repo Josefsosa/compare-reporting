@@ -1,0 +1,332 @@
+{% extends "layout.html" %}
+
+{% block title %}Technology Comparison Tool{% endblock %}
+
+{% block header_title %}Technology Comparison Tool{% endblock %}
+
+{% block head_extra %}
+<!-- Additional CSS specific to comparison page -->
+{% endblock %}
+
+{% block content %}
+<div class="comparison-page">
+    <!-- File Upload Section -->
+    <section class="comparison-section">
+        <div class="comparison-controls">
+            <div class="comparison-tabs">
+                <button id="image-tab" class="tab-button active">
+                    <i class="fas fa-image"></i> Image Comparison
+                </button>
+                <button id="pdf-tab" class="tab-button">
+                    <i class="fas fa-file-pdf"></i> PDF Comparison
+                </button>
+            </div>
+            <button id="switch-button" class="action-button" title="Switch sides">
+                <i class="fas fa-exchange-alt"></i> Switch
+            </button>
+        </div>
+
+        <div class="comparison-container">
+            <!-- Left Panel -->
+            <div class="comparison-panel" id="left-panel">
+                <h2>Document A</h2>
+                <div class="input-type-controls">
+                    <button class="input-type-button active" data-type="file" data-side="left">
+                        <i class="fas fa-upload"></i> Upload
+                    </button>
+                    <button class="input-type-button" data-type="url" data-side="left">
+                        <i class="fas fa-link"></i> URL
+                    </button>
+                </div>
+                
+                <div class="input-container" id="left-file-input">
+                    <div class="file-drop-area">
+                        <input type="file" id="file-left" class="file-input" accept=".jpg,.jpeg,.png,.gif,.pdf">
+                        <label for="file-left">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Drop file here or click to upload</span>
+                            <span class="file-info" id="file-info-left"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="input-container hidden" id="left-url-input">
+                    <input type="url" id="url-left" placeholder="Enter URL to image or PDF">
+                    <button id="load-url-left" class="load-url-button">Load</button>
+                </div>
+                
+                <div class="document-preview" id="preview-left">
+                    <div class="empty-state">
+                        <i class="fas fa-file-image"></i>
+                        <p>No document loaded</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Panel -->
+            <div class="comparison-panel" id="right-panel">
+                <h2>Document B</h2>
+                <div class="input-type-controls">
+                    <button class="input-type-button active" data-type="file" data-side="right">
+                        <i class="fas fa-upload"></i> Upload
+                    </button>
+                    <button class="input-type-button" data-type="url" data-side="right">
+                        <i class="fas fa-link"></i> URL
+                    </button>
+                </div>
+                
+                <div class="input-container" id="right-file-input">
+                    <div class="file-drop-area">
+                        <input type="file" id="file-right" class="file-input" accept=".jpg,.jpeg,.png,.gif,.pdf">
+                        <label for="file-right">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Drop file here or click to upload</span>
+                            <span class="file-info" id="file-info-right"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="input-container hidden" id="right-url-input">
+                    <input type="url" id="url-right" placeholder="Enter URL to image or PDF">
+                    <button id="load-url-right" class="load-url-button">Load</button>
+                </div>
+                
+                <div class="document-preview" id="preview-right">
+                    <div class="empty-state">
+                        <i class="fas fa-file-image"></i>
+                        <p>No document loaded</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <button id="compare-button" class="primary-button" disabled>
+                <i class="fas fa-balance-scale"></i> Compare
+            </button>
+        </div>
+    </section>
+
+    <!-- Results Section (Hidden initially) -->
+    <section id="results-section" class="results-section hidden">
+        <h2>Comparison Results</h2>
+        
+        <div class="results-container">
+            <div class="result-summary">
+                <div class="overall-scores">
+                    <div class="score-card">
+                        <h3>Document A</h3>
+                        <div class="score-circle" id="score-circle-left">
+                            <span id="score-value-left">0</span>
+                        </div>
+                        <div class="score-label" id="score-label-left">N/A</div>
+                    </div>
+                    
+                    <div class="vs-indicator">VS</div>
+                    
+                    <div class="score-card">
+                        <h3>Document B</h3>
+                        <div class="score-circle" id="score-circle-right">
+                            <span id="score-value-right">0</span>
+                        </div>
+                        <div class="score-label" id="score-label-right">N/A</div>
+                    </div>
+                </div>
+                
+                <div class="comparison-chart-container">
+                    <canvas id="comparison-chart"></canvas>
+                </div>
+            </div>
+            
+            <div class="detailed-criteria">
+                <h3>Detailed Comparison</h3>
+                <div class="criteria-categories" id="criteria-categories">
+                    <!-- Categories will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="comparison-recommendations">
+                <h3>Recommendations</h3>
+                <div class="recommendation-categories">
+                    <div class="recommendation-category">
+                        <h4>Business Value</h4>
+                        <ul id="business-recommendations">
+                            <!-- Will be populated by JavaScript -->
+                        </ul>
+                    </div>
+                    <div class="recommendation-category">
+                        <h4>Technical Value</h4>
+                        <ul id="technical-recommendations">
+                            <!-- Will be populated by JavaScript -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="conclusion-section">
+                <h3>Conclusion</h3>
+                <div class="conclusions">
+                    <div class="conclusion" id="conclusion-left">
+                        <h4>Document A</h4>
+                        <p id="conclusion-text-left"></p>
+                    </div>
+                    <div class="conclusion" id="conclusion-right">
+                        <h4>Document B</h4>
+                        <p id="conclusion-text-right"></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="export-actions">
+                {% if current_user.is_authenticated %}
+                <button id="save-comparison" class="action-button">
+                    <i class="fas fa-save"></i> Save Comparison
+                </button>
+                {% endif %}
+                <button id="export-pdf" class="action-button">
+                    <i class="fas fa-file-pdf"></i> Export as PDF
+                </button>
+                <button id="share-results" class="action-button">
+                    <i class="fas fa-share-alt"></i> Share Results
+                </button>
+                <button id="new-comparison" class="primary-button">
+                    <i class="fas fa-redo"></i> New Comparison
+                </button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Save Comparison Modal -->
+{% if current_user.is_authenticated %}
+<div class="modal fade" id="save-comparison-modal" tabindex="-1" aria-labelledby="save-comparison-modal-label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="save-comparison-modal-label">Save Comparison</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="save-comparison-form">
+                    <div class="mb-3">
+                        <label for="comparison-title" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="comparison-title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="comparison-description" class="form-label">Description</label>
+                        <textarea class="form-control" id="comparison-description" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-comparison-confirm">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<!-- Load JavaScript files -->
+<script src="{{ url_for('static', filename='js/pdfHandler.js') }}"></script>
+<script src="{{ url_for('static', filename='js/imageHandler.js') }}"></script>
+<script src="{{ url_for('static', filename='js/comparisonMetrics.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+{% if current_user.is_authenticated %}
+<script>
+// Save comparison functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const saveComparisonBtn = document.getElementById('save-comparison');
+    const saveComparisonConfirmBtn = document.getElementById('save-comparison-confirm');
+    const saveComparisonModal = new bootstrap.Modal(document.getElementById('save-comparison-modal'));
+    
+    let currentResults = null;
+    
+    // When comparison results are available, store them
+    function storeComparisonResults(results) {
+        currentResults = results;
+    }
+    
+    // When compare button is clicked and results are shown, observe this event
+    const compareBtn = document.getElementById('compare-button');
+    const origPerformComparison = performComparison;
+    
+    if (typeof performComparison === 'function') {
+        window.performComparison = function() {
+            const results = origPerformComparison.apply(this, arguments);
+            setTimeout(() => {
+                const resultsSection = document.getElementById('results-section');
+                if (!resultsSection.classList.contains('hidden')) {
+                    // Get comparison results from comparisonMetrics
+                    currentResults = window.comparisonMetrics.generateComparison();
+                }
+            }, 2500); // Allow time for the comparison to complete
+            return results;
+        };
+    }
+    
+    // When save button is clicked, show the modal
+    saveComparisonBtn.addEventListener('click', function() {
+        saveComparisonModal.show();
+    });
+    
+    // When confirm button in modal is clicked, save the comparison
+    saveComparisonConfirmBtn.addEventListener('click', function() {
+        const title = document.getElementById('comparison-title').value;
+        const description = document.getElementById('comparison-description').value;
+        
+        if (!title) {
+            alert('Please enter a title for your comparison');
+            return;
+        }
+        
+        if (!currentResults) {
+            alert('No comparison results to save');
+            saveComparisonModal.hide();
+            return;
+        }
+        
+        // Get document info
+        const fileInfoLeft = document.getElementById('file-info-left').textContent;
+        const fileInfoRight = document.getElementById('file-info-right').textContent;
+        
+        // Prepare data for saving
+        const data = {
+            title: title,
+            description: description,
+            documentAName: fileInfoLeft || 'Document A',
+            documentBName: fileInfoRight || 'Document B',
+            documentAType: document.getElementById('image-tab').classList.contains('active') ? 'image' : 'pdf',
+            documentBType: document.getElementById('image-tab').classList.contains('active') ? 'image' : 'pdf',
+            resultsJson: JSON.stringify(currentResults)
+        };
+        
+        // Send to server
+        fetch('/save-comparison', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Comparison saved successfully!');
+                saveComparisonModal.hide();
+            } else {
+                alert('Error saving comparison: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error saving comparison:', error);
+            alert('Error saving comparison. Please try again.');
+        });
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

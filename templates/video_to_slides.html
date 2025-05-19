@@ -1,0 +1,718 @@
+{% extends "layout.html" %}
+
+{% block title %}Video to Slides Generator{% endblock %}
+
+{% block header_title %}Video to Slides Generator{% endblock %}
+
+{% block head_extra %}
+<!-- Additional CSS specific to video-to-slides page -->
+{% endblock %}
+
+{% block content %}
+<div class="video-to-slides-page">
+    <!-- Video Input Section -->
+    <section class="video-input-section">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title">Enter YouTube Video URL</h3>
+                <p class="card-text">Paste the URL of a YouTube video to generate a presentation based on its content.</p>
+                
+                <div class="input-group mb-3">
+                    <input type="url" id="video-url" class="form-control" placeholder="https://www.youtube.com/watch?v=..." 
+                           aria-label="YouTube video URL" value="https://www.youtube.com/watch?v=3LrFVT4gqJQ">
+                    <button class="btn btn-primary" type="button" id="process-video-btn">
+                        <i class="fas fa-magic"></i> Generate Slides
+                    </button>
+                </div>
+                
+                <div class="form-text">Example: https://www.youtube.com/watch?v=3LrFVT4gqJQ</div>
+                
+                <!-- AI Provider Configuration -->
+                <div class="ai-config mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h4 class="mb-0">AI Provider Settings</h4>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#aiConfigCollapse">
+                            <i class="fas fa-cog"></i> Configure
+                        </button>
+                    </div>
+                    
+                    <div class="collapse" id="aiConfigCollapse">
+                        <div class="card card-body bg-light">
+                            <div class="mb-3">
+                                <label for="ai-provider" class="form-label">AI Provider</label>
+                                <select id="ai-provider" class="form-select">
+                                    <option value="openai" selected>OpenAI</option>
+                                    <option value="anthropic">Anthropic</option>
+                                    <option value="google">Google Gemini</option>
+                                    <option value="custom">Custom</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3" id="api-key-container">
+                                <label for="api-key" class="form-label">API Key</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="api-key" placeholder="Enter your API key">
+                                    <button class="btn btn-outline-secondary toggle-password" type="button">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text">Your API key is stored securely in your browser and not sent to our servers.</div>
+                            </div>
+                            
+                            <div class="mb-3 d-none" id="custom-api-url-container">
+                                <label for="custom-api-url" class="form-label">Custom API Endpoint URL</label>
+                                <input type="url" class="form-control" id="custom-api-url" placeholder="https://api.example.com/v1/chat/completions">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="ai-model" class="form-label">Model</label>
+                                <select id="ai-model" class="form-select">
+                                    <option value="gpt-4o" selected>GPT-4o</option>
+                                    <option value="gpt-4">GPT-4</option>
+                                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                </select>
+                            </div>
+                            
+                            <button type="button" class="btn btn-primary" id="save-ai-config">Save Configuration</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="video-preview" class="video-preview-container mt-4 hidden">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title">Video Preview</h3>
+                    <div class="video-details">
+                        <div class="video-thumbnail">
+                            <img id="video-thumbnail" src="" alt="Video thumbnail">
+                        </div>
+                        <div class="video-info">
+                            <h4 id="video-title">Video Title</h4>
+                            <p id="video-channel">Channel Name</p>
+                            <div id="video-stats">
+                                <span id="video-duration"><i class="fas fa-clock"></i> 00:00</span>
+                                <span id="video-published"><i class="fas fa-calendar"></i> Published Date</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Processing Status Section -->
+    <section id="processing-section" class="processing-section mt-4 hidden">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="processing-animation">
+                    <i class="fas fa-spinner fa-spin fa-3x"></i>
+                </div>
+                <h3 class="mt-3">Processing Video</h3>
+                <p class="processing-status">Analyzing video content and generating presentation slides...</p>
+                <div class="progress mt-3">
+                    <div id="processing-progress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Presentation Preview Section -->
+    <section id="presentation-section" class="presentation-section mt-4 hidden">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="card-title mb-0">Presentation Preview</h3>
+                    <div class="presentation-actions">
+                        {% if current_user.is_authenticated %}
+                        <button id="save-presentation-btn" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                        {% endif %}
+                        <button id="download-pptx-btn" class="btn btn-primary">
+                            <i class="fas fa-file-powerpoint"></i> Download PPTX
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="presentation-title" class="presentation-title mb-3">
+                    <h2>Presentation Title</h2>
+                </div>
+                
+                <div id="slides-preview" class="slides-preview">
+                    <!-- Slides will be generated here -->
+                    <div class="placeholder-slides">
+                        <p class="text-center text-muted">Slides will appear here after processing.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Error Section -->
+    <section id="error-section" class="error-section mt-4 hidden">
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <div class="error-icon mb-3">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning"></i>
+                </div>
+                <h3>Processing Error</h3>
+                <p id="error-message">We encountered an error while processing your video. Please try again.</p>
+                <button id="try-again-btn" class="btn btn-primary mt-3">
+                    <i class="fas fa-redo"></i> Try Again
+                </button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Save Presentation Modal -->
+{% if current_user.is_authenticated %}
+<div class="modal fade" id="save-presentation-modal" tabindex="-1" aria-labelledby="save-presentation-modal-label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="save-presentation-modal-label">Save Presentation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="save-presentation-form">
+                    <div class="mb-3">
+                        <label for="presentation-title-input" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="presentation-title-input" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="presentation-description" class="form-label">Description</label>
+                        <textarea class="form-control" id="presentation-description" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-presentation-confirm">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // DOM Elements - using safe references to avoid null errors
+    const videoUrlInput = document.getElementById('video-url');
+    const processVideoBtn = document.getElementById('process-video-btn');
+    const videoPreview = document.getElementById('video-preview');
+    const videoThumbnail = document.getElementById('video-thumbnail');
+    const videoTitle = document.getElementById('video-title');
+    const videoChannel = document.getElementById('video-channel');
+    const videoDuration = document.getElementById('video-duration');
+    const videoPublished = document.getElementById('video-published');
+    const processingSection = document.getElementById('processing-section');
+    const processingProgress = document.getElementById('processing-progress');
+    const presentationSection = document.getElementById('presentation-section');
+    const slidesPreview = document.getElementById('slides-preview');
+    const presentationTitleElement = document.getElementById('presentation-title');
+    const errorSection = document.getElementById('error-section');
+    const errorMessage = document.getElementById('error-message');
+    const tryAgainBtn = document.getElementById('try-again-btn');
+    const downloadPptxBtn = document.getElementById('download-pptx-btn');
+    
+    // Optional elements (only exist if user is authenticated)
+    const savePresentationBtn = document.getElementById('save-presentation-btn');
+    const savePresentationModal = document.getElementById('save-presentation-modal') ? 
+                                  new bootstrap.Modal(document.getElementById('save-presentation-modal')) : null;
+    const savePresentationConfirm = document.getElementById('save-presentation-confirm');
+    
+    // State
+    let currentVideoUrl = '';
+    let currentVideoTitle = '';
+    let currentPresentation = null;
+    
+    // YouTube URL validation regex
+    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
+    
+    // Utility functions
+    function formatDuration(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        
+        if (hours > 0) {
+            return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        } else {
+            return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
+    }
+    
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString();
+    }
+    
+    function extractVideoId(url) {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+    }
+    
+    function resetUI() {
+        if (videoPreview) videoPreview.classList.add('hidden');
+        if (processingSection) processingSection.classList.add('hidden');
+        if (presentationSection) presentationSection.classList.add('hidden');
+        if (errorSection) errorSection.classList.add('hidden');
+        if (processingProgress) processingProgress.style.width = '0%';
+        if (slidesPreview) slidesPreview.innerHTML = '<div class="placeholder-slides"><p class="text-center text-muted">Slides will appear here after processing.</p></div>';
+    }
+    
+    function showError(message) {
+        if (errorMessage) errorMessage.textContent = message || 'We encountered an error while processing your video. Please try again.';
+        if (errorSection) errorSection.classList.remove('hidden');
+        if (processingSection) processingSection.classList.add('hidden');
+    }
+    
+    // AI Provider Configuration Functions
+    function getSelectedAIProvider() {
+        const provider = document.getElementById('ai-provider');
+        const model = document.getElementById('ai-model');
+        const apiKey = document.getElementById('api-key');
+        const customUrl = document.getElementById('custom-api-url');
+        
+        if (!provider || !model) return { provider: 'openai', model: 'gpt-4o' };
+        
+        return {
+            provider: provider.value,
+            model: model.value,
+            apiKey: apiKey ? apiKey.value : null,
+            customUrl: customUrl && !customUrl.parentElement.classList.contains('d-none') ? customUrl.value : null
+        };
+    }
+    
+    // Initialize AI provider settings
+    function initAIProviderSettings() {
+        const aiProvider = document.getElementById('ai-provider');
+        const apiKeyContainer = document.getElementById('api-key-container');
+        const customApiUrlContainer = document.getElementById('custom-api-url-container');
+        const apiKeyInput = document.getElementById('api-key');
+        const customUrlInput = document.getElementById('custom-api-url');
+        const togglePasswordBtn = document.querySelector('.toggle-password');
+        const saveConfigBtn = document.getElementById('save-ai-config');
+        
+        // Load saved settings from localStorage
+        function loadSavedSettings() {
+            const savedSettings = localStorage.getItem('aiProviderSettings');
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                
+                if (aiProvider) aiProvider.value = settings.provider || 'openai';
+                if (apiKeyInput) apiKeyInput.value = settings.apiKey || '';
+                if (customUrlInput) customUrlInput.value = settings.customUrl || '';
+                
+                // Update UI based on provider
+                updateUIForProvider(settings.provider || 'openai');
+                
+                // Handle model selection
+                const aiModel = document.getElementById('ai-model');
+                if (aiModel) {
+                    // First, update the model options based on the provider
+                    updateModelOptions(settings.provider || 'openai');
+                    
+                    // Then set the selected model if available
+                    if (settings.model) {
+                        // Check if the model exists in the options
+                        const modelExists = Array.from(aiModel.options).some(option => option.value === settings.model);
+                        aiModel.value = modelExists ? settings.model : aiModel.options[0].value;
+                    }
+                }
+            }
+        }
+        
+        // Update UI based on selected provider
+        function updateUIForProvider(provider) {
+            if (!customApiUrlContainer) return;
+            
+            if (provider === 'custom') {
+                customApiUrlContainer.classList.remove('d-none');
+            } else {
+                customApiUrlContainer.classList.add('d-none');
+            }
+            
+            // Update model options based on provider
+            updateModelOptions(provider);
+        }
+        
+        // Update model options based on provider
+        function updateModelOptions(provider) {
+            const aiModel = document.getElementById('ai-model');
+            if (!aiModel) return;
+            
+            // Clear existing options
+            aiModel.innerHTML = '';
+            
+            // Add new options based on provider
+            if (provider === 'openai') {
+                addOption(aiModel, 'gpt-4o', 'GPT-4o');
+                addOption(aiModel, 'gpt-4', 'GPT-4');
+                addOption(aiModel, 'gpt-3.5-turbo', 'GPT-3.5 Turbo');
+            } else if (provider === 'anthropic') {
+                addOption(aiModel, 'claude-3-opus', 'Claude 3 Opus');
+                addOption(aiModel, 'claude-3-sonnet', 'Claude 3 Sonnet');
+                addOption(aiModel, 'claude-3-haiku', 'Claude 3 Haiku');
+            } else if (provider === 'google') {
+                addOption(aiModel, 'gemini-pro', 'Gemini Pro');
+                addOption(aiModel, 'gemini-ultra', 'Gemini Ultra');
+            } else {
+                addOption(aiModel, 'custom', 'Custom Model');
+            }
+        }
+        
+        // Helper to add option to select
+        function addOption(select, value, text) {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = text;
+            select.appendChild(option);
+        }
+        
+        // Event listeners
+        if (aiProvider) {
+            aiProvider.addEventListener('change', function() {
+                updateUIForProvider(this.value);
+            });
+        }
+        
+        if (togglePasswordBtn) {
+            togglePasswordBtn.addEventListener('click', function() {
+                const icon = this.querySelector('i');
+                const input = document.getElementById('api-key');
+                
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            });
+        }
+        
+        if (saveConfigBtn) {
+            saveConfigBtn.addEventListener('click', function() {
+                const settings = {
+                    provider: aiProvider ? aiProvider.value : 'openai',
+                    model: document.getElementById('ai-model') ? document.getElementById('ai-model').value : 'gpt-4o',
+                    apiKey: apiKeyInput ? apiKeyInput.value : '',
+                    customUrl: customUrlInput ? customUrlInput.value : ''
+                };
+                
+                localStorage.setItem('aiProviderSettings', JSON.stringify(settings));
+                
+                // Show success message
+                alert('AI provider settings saved successfully!');
+                
+                // Close the configuration panel
+                const aiConfigCollapse = document.getElementById('aiConfigCollapse');
+                if (aiConfigCollapse) {
+                    const bsCollapse = bootstrap.Collapse.getInstance(aiConfigCollapse);
+                    if (bsCollapse) {
+                        bsCollapse.hide();
+                    }
+                }
+            });
+        }
+        
+        // Load saved settings on init
+        loadSavedSettings();
+    }
+    
+    // Initialize AI provider settings
+    initAIProviderSettings();
+    
+    // Video URL validation and preview
+    videoUrlInput.addEventListener('input', function() {
+        if (youtubeRegex.test(this.value)) {
+            processVideoBtn.disabled = false;
+        } else {
+            processVideoBtn.disabled = true;
+        }
+    });
+    
+    // Process video button click
+    if (processVideoBtn) {
+        processVideoBtn.addEventListener('click', function() {
+            const videoUrl = videoUrlInput.value.trim();
+            
+            if (!youtubeRegex.test(videoUrl)) {
+                alert('Please enter a valid YouTube URL');
+                return;
+            }
+            
+            currentVideoUrl = videoUrl;
+            resetUI();
+            
+            // Show processing section
+            processingSection.classList.remove('hidden');
+            
+            // Start progress animation
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 1;
+                if (progress > 95) {
+                    clearInterval(progressInterval);
+                }
+                processingProgress.style.width = `${progress}%`;
+            }, 300);
+            
+            // Fetch video metadata to display preview
+            const videoId = extractVideoId(videoUrl);
+            if (videoId) {
+                // Set thumbnail 
+                videoThumbnail.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+                
+                // Mock video details (in production, this would come from API)
+                videoTitle.textContent = "AI in Tech Comparison Tools";
+                currentVideoTitle = "AI in Tech Comparison Tools";
+                videoChannel.textContent = "Tech Analysis Channel";
+                videoDuration.innerHTML = `<i class="fas fa-clock"></i> 12:45`;
+                videoPublished.innerHTML = `<i class="fas fa-calendar"></i> ${formatDate(new Date())}`;
+                
+                videoPreview.classList.remove('hidden');
+            }
+            
+            try {
+                // Call the server to process the video
+                fetch('/create-slide-deck', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        videoUrl: videoUrl,
+                        videoTitle: currentVideoTitle,
+                        aiProvider: getSelectedAIProvider() // Get the selected AI provider
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    clearInterval(progressInterval);
+                    
+                    if (data.success) {
+                        // In a real implementation, we would poll for status updates
+                        // For this demo, we'll simulate the process with setTimeout
+                        setTimeout(() => {
+                            processingProgress.style.width = '100%';
+                            
+                            // Simulate received presentation data
+                            simulatePresentation();
+                        }, 2000);
+                    } else {
+                        showError(data.error || 'Error processing video');
+                    }
+                })
+                .catch(error => {
+                    clearInterval(progressInterval);
+                    console.error('Error processing video:', error);
+                    errorSection.classList.remove('hidden');
+                    processingSection.classList.add('hidden');
+                    errorMessage.textContent = 'Network error. Please check your connection and try again.';
+                });
+            } catch (error) {
+                clearInterval(progressInterval);
+                console.error('Error processing video:', error);
+                errorSection.classList.remove('hidden');
+                processingSection.classList.add('hidden');
+                errorMessage.textContent = 'An error occurred. Please try again.';
+            }
+        });
+    }
+    
+    // Try again button click
+    if (tryAgainBtn) {
+        tryAgainBtn.addEventListener('click', function() {
+            resetUI();
+        });
+    }
+    
+    // Download PPTX button click
+    if (downloadPptxBtn) {
+        downloadPptxBtn.addEventListener('click', function() {
+            if (!currentPresentation) {
+                alert('No presentation data available');
+                return;
+            }
+            
+            // In a real implementation, this would call the server to generate the PPTX
+            alert('In a production environment, this would download the generated PPTX file.');
+        });
+    }
+    
+    // Save presentation button click (if user is authenticated)
+    if (savePresentationBtn) {
+        savePresentationBtn.addEventListener('click', function() {
+            if (!currentPresentation) {
+                alert('No presentation data available');
+                return;
+            }
+            
+            // Pre-fill the modal with the presentation title
+            document.getElementById('presentation-title-input').value = currentPresentation.title;
+            
+            savePresentationModal.show();
+        });
+    }
+    
+    // Save presentation confirm button click (if user is authenticated)
+    if (savePresentationConfirm) {
+        savePresentationConfirm.addEventListener('click', function() {
+            const title = document.getElementById('presentation-title-input').value;
+            const description = document.getElementById('presentation-description').value;
+            
+            if (!title) {
+                alert('Please enter a title for your presentation');
+                return;
+            }
+            
+            // Send save request to server
+            fetch('/create-slide-deck', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: title,
+                    description: description,
+                    videoUrl: currentVideoUrl,
+                    videoTitle: currentVideoTitle
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Presentation saved successfully!');
+                    savePresentationModal.hide();
+                } else {
+                    alert('Error saving presentation: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error saving presentation:', error);
+                alert('Error saving presentation. Please try again.');
+            });
+        });
+    }
+    
+    // Function to simulate presentation data (this would come from the server in production)
+    function simulatePresentation() {
+        // Mock presentation data
+        currentPresentation = {
+            title: "AI in Modern Technology Comparison",
+            slides: [
+                {
+                    title: "Introduction",
+                    content: [
+                        "Welcome to AI in Technology Comparison",
+                        "How artificial intelligence enhances technical analysis",
+                        "Key benefits of AI-powered comparison tools"
+                    ],
+                    image_url: "https://placehold.co/600x400?text=Introduction"
+                },
+                {
+                    title: "Traditional vs. AI Approaches",
+                    content: [
+                        "Manual comparison methods and their limitations",
+                        "How AI transforms the analysis process",
+                        "Increased accuracy and efficiency with machine learning"
+                    ],
+                    image_url: "https://placehold.co/600x400?text=Traditional+vs+AI"
+                },
+                {
+                    title: "Key Features of AI Comparison",
+                    content: [
+                        "Automatic pattern recognition",
+                        "Multi-dimensional analysis capabilities",
+                        "Natural language processing for technical documentation",
+                        "Real-time adaptation to new data"
+                    ],
+                    image_url: "https://placehold.co/600x400?text=Key+Features"
+                },
+                {
+                    title: "Implementation Strategies",
+                    content: [
+                        "Integrating AI into existing comparison workflows",
+                        "Training requirements for comparison models",
+                        "Handling diverse data formats and sources"
+                    ],
+                    image_url: "https://placehold.co/600x400?text=Implementation"
+                },
+                {
+                    title: "Case Studies & Results",
+                    content: [
+                        "Example 1: 85% time reduction in processor benchmarking",
+                        "Example 2: 73% improved accuracy in API compatibility analysis",
+                        "Example 3: Automated documentation comparison across versions"
+                    ],
+                    image_url: "https://placehold.co/600x400?text=Case+Studies"
+                },
+                {
+                    title: "Future Developments",
+                    content: [
+                        "Self-improving comparison algorithms",
+                        "Cross-domain knowledge transfer",
+                        "Predictive technology evolution mapping"
+                    ],
+                    image_url: "https://placehold.co/600x400?text=Future+Developments"
+                },
+                {
+                    title: "Questions & Discussion",
+                    content: [
+                        "What technologies are you currently comparing?",
+                        "How could AI enhance your comparison processes?",
+                        "Contact: example@techanalysis.com"
+                    ],
+                    image_url: "https://placehold.co/600x400?text=Q%26A"
+                }
+            ]
+        };
+        
+        // Display the presentation
+        presentationTitleElement.innerHTML = `<h2>${currentPresentation.title}</h2>`;
+        
+        // Generate slide HTML
+        let slidesHTML = '';
+        currentPresentation.slides.forEach((slide, index) => {
+            slidesHTML += `
+                <div class="slide-preview">
+                    <div class="slide-number">${index + 1}</div>
+                    <div class="slide-content">
+                        <div class="slide-image">
+                            <img src="${slide.image_url}" alt="${slide.title}">
+                        </div>
+                        <div class="slide-text">
+                            <h4>${slide.title}</h4>
+                            <ul>
+                                ${slide.content.map(point => `<li>${point}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        slidesPreview.innerHTML = slidesHTML;
+        
+        // Hide processing section and show presentation section
+        processingSection.classList.add('hidden');
+        presentationSection.classList.remove('hidden');
+    }
+    
+    // Auto-run for demo purposes if URL is pre-filled
+    if (videoUrlInput.value && youtubeRegex.test(videoUrlInput.value)) {
+        processVideoBtn.disabled = false;
+    }
+});
+</script>
+{% endblock %}
