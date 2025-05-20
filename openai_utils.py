@@ -6,9 +6,19 @@ import logging
 from pytube import YouTube
 from openai import OpenAI
 
-# Initialize OpenAI client
-api_key = os.environ.get("OPENAI_API_KEY")
-client = OpenAI(api_key=api_key)
+# Default OpenAI client using environment variable (fallback)
+default_api_key = os.environ.get("OPENAI_API_KEY")
+default_client = OpenAI(api_key=default_api_key) if default_api_key else None
+
+# Function to get OpenAI client with user's API key
+def get_client(api_key=None):
+    """Get an OpenAI client instance with the provided API key or default"""
+    if api_key:
+        return OpenAI(api_key=api_key)
+    elif default_client:
+        return default_client
+    else:
+        raise ValueError("No API key provided and no default API key configured")
 
 def extract_video_id(youtube_url):
     """Extract the YouTube video ID from a URL."""
@@ -41,14 +51,43 @@ def get_video_info(youtube_url):
             "thumbnail_url": None
         }
 
-def analyze_video_content(video_url):
+def analyze_video_content(video_url, api_key=None):
     """
     Analyze a YouTube video and extract key points for slides.
     This is a simplified version that would actually use frames and audio in production.
+    
+    Args:
+        video_url (str): URL of the YouTube video to analyze
+        api_key (str, optional): OpenAI API key. If not provided, uses default key.
     """
     # Get video basic info
     video_info = get_video_info(video_url)
     video_id = extract_video_id(video_url)
+    
+    # Default presentation data in case of errors
+    default_presentation = {
+        "title": video_info.get("title", "Presentation"),
+        "slides": [
+            {
+                "title": "Error Processing Video",
+                "content": ["We encountered an error while processing this video.", 
+                            "Please try again later or with a different video."],
+                "image_description": "An error icon or warning symbol"
+            }
+        ],
+        "video_metadata": {
+            "title": video_info.get("title", ""),
+            "url": video_url,
+            "thumbnail_url": video_info.get("thumbnail_url", "")
+        }
+    }
+    
+    # Get OpenAI client with user's API key or default
+    try:
+        client = get_client(api_key)
+    except ValueError as e:
+        logging.error(f"API key error: {str(e)}")
+        return default_presentation
     
     # In a full implementation, we would:
     # 1. Extract frames from the video at regular intervals
@@ -96,38 +135,31 @@ def analyze_video_content(video_url):
         
         # Parse the response
         content = response.choices[0].message.content
-        if content:
+        
+        if not content:
+            logging.error("No content returned from OpenAI API")
+            return default_presentation
+            
+        try:
             presentation_data = json.loads(content)
-        
-        # Add video metadata
-        presentation_data["video_metadata"] = {
-            "title": video_info.get("title", ""),
-            "author": video_info.get("author", ""),
-            "url": video_url,
-            "thumbnail_url": video_info.get("thumbnail_url", f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg")
-        }
-        
-        return presentation_data
+            
+            # Add video metadata
+            presentation_data["video_metadata"] = {
+                "title": video_info.get("title", ""),
+                "author": video_info.get("author", ""),
+                "url": video_url,
+                "thumbnail_url": video_info.get("thumbnail_url", f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg")
+            }
+            
+            return presentation_data
+            
+        except json.JSONDecodeError as json_err:
+            logging.error(f"JSON parse error: {str(json_err)}")
+            return default_presentation
         
     except Exception as e:
         logging.error(f"Error analyzing video content: {str(e)}")
-        # Return a basic template if analysis fails
-        return {
-            "title": video_info.get("title", "Presentation"),
-            "slides": [
-                {
-                    "title": "Error Processing Video",
-                    "content": ["We encountered an error while processing this video.", 
-                                "Please try again later or with a different video."],
-                    "image_description": "An error icon or warning symbol"
-                }
-            ],
-            "video_metadata": {
-                "title": video_info.get("title", ""),
-                "url": video_url,
-                "thumbnail_url": video_info.get("thumbnail_url", "")
-            }
-        }
+        return default_presentation
 
 def generate_slide_images(slides):
     """
@@ -142,14 +174,18 @@ def generate_slide_images(slides):
     
     return slides
 
-def process_video(video_url):
+def process_video(video_url, api_key=None):
     """
     Main function to process a video and generate a presentation.
+    
+    Args:
+        video_url (str): URL of the YouTube video to analyze
+        api_key (str, optional): OpenAI API key. If not provided, uses default key.
     """
     logging.info(f"Processing video: {video_url}")
     
-    # Analyze video content
-    presentation_data = analyze_video_content(video_url)
+    # Analyze video content with the provided API key
+    presentation_data = analyze_video_content(video_url, api_key)
     
     # Generate images for slides
     if "slides" in presentation_data:

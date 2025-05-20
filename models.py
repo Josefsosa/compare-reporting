@@ -1,6 +1,10 @@
 from datetime import datetime
+import json
 from flask_login import UserMixin
+from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Text, JSON, UniqueConstraint
+from sqlalchemy.orm import relationship
 import app as app_module
+
 db = app_module.db
 
 class User(UserMixin, db.Model):
@@ -55,7 +59,11 @@ class OAuth(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String, db.ForeignKey(User.id))
     provider = db.Column(db.String(50), nullable=False)
-    token = db.Column(db.Text, nullable=False)
+    token = db.Column(db.JSON, nullable=False)
     browser_session_key = db.Column(db.String, nullable=False)
     
+    # Define relationship with User model
     user = db.relationship(User)
+    
+    # Add unique constraint for user_id, provider, browser_session_key
+    __table_args__ = (db.UniqueConstraint('user_id', 'provider', 'browser_session_key'),)

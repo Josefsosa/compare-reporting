@@ -6,6 +6,58 @@
 
 {% block head_extra %}
 <!-- Additional CSS specific to video-to-slides page -->
+<style>
+    .slides-section {
+        margin-top: 2rem;
+    }
+    .slide-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        background-color: white;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .slide-header {
+        margin-bottom: 1rem;
+        border-bottom: 1px solid #f0f0f0;
+        padding-bottom: 0.5rem;
+    }
+    .slide-content {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    .slide-image {
+        flex: 1;
+        min-width: 200px;
+    }
+    .slide-image img {
+        max-width: 100%;
+        border-radius: 4px;
+    }
+    .slide-text {
+        flex: 2;
+        min-width: 300px;
+    }
+    .slide-number {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background-color: #007bff;
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+    .hidden {
+        display: none;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -27,37 +79,35 @@
                 
                 <div class="form-text">Example: https://www.youtube.com/watch?v=3LrFVT4gqJQ</div>
                 
-                <!-- AI Provider Configuration -->
+                {% if not current_user.is_authenticated %}
+                <div class="alert alert-info mt-3" role="alert">
+                    <i class="fas fa-info-circle"></i> 
+                    <strong>Note:</strong> You'll need to provide an API key below to process videos. 
+                    <a href="{{ url_for('replit_auth.login') }}" class="alert-link">Log in</a> to save your presentations for later.
+                </div>
+                {% endif %}
+                
+                <!-- API Configuration -->
                 <div class="ai-config mt-4">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h4 class="mb-0">AI Provider Settings</h4>
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#aiConfigCollapse">
-                            <i class="fas fa-cog"></i> Configure
-                        </button>
-                    </div>
-                    
-                    <div class="collapse" id="aiConfigCollapse">
-                        <div class="card card-body bg-light">
-                            <div class="mb-3">
-                                <label for="ai-provider" class="form-label">AI Provider</label>
-                                <select id="ai-provider" class="form-select">
-                                    <option value="openai" selected>OpenAI</option>
-                                    <option value="anthropic">Anthropic</option>
-                                    <option value="google">Google Gemini</option>
-                                    <option value="custom">Custom</option>
-                                </select>
+                    <div class="card card-body bg-light border-warning">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h4 class="mb-0">API Key (Optional)</h4>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Your OpenAI API key enables advanced features like detailed video annotations and enhanced image generation for presentations. Your key is never saved in our database and is cleared after each session.
+                        </div>
+                        
+                        <div class="mb-3" id="api-key-container">
+                            <label for="api-key" class="form-label">OpenAI API Key (Optional)</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="api-key" placeholder="Enter your OpenAI API key" value="" autocomplete="off">
+                                <button class="btn btn-outline-secondary toggle-password" type="button">
+                                    <i class="fas fa-eye"></i>
+                                </button>
                             </div>
-                            
-                            <div class="mb-3" id="api-key-container">
-                                <label for="api-key" class="form-label">API Key</label>
-                                <div class="input-group">
-                                    <input type="password" class="form-control" id="api-key" placeholder="Enter your API key">
-                                    <button class="btn btn-outline-secondary toggle-password" type="button">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                                <div class="form-text">Your API key is stored securely in your browser and not sent to our servers.</div>
-                            </div>
+                            <div class="form-text">API key is completely optional. Your key is never stored and is cleared after page refresh.</div>
+                        </div>
                             
                             <div class="mb-3 d-none" id="custom-api-url-container">
                                 <label for="custom-api-url" class="form-label">Custom API Endpoint URL</label>
@@ -138,6 +188,24 @@
                 
                 <div id="presentation-title" class="presentation-title mb-3">
                     <h2>Presentation Title</h2>
+                </div>
+                
+                <!-- Download Options Section -->
+                <div class="mt-4 mb-4 download-options d-none">
+                    <div class="card card-body bg-light">
+                        <h5 class="mb-3">Download Options</h5>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-success" id="download-pptx">
+                                <i class="fas fa-file-powerpoint"></i> Download PowerPoint
+                            </button>
+                            <button class="btn btn-info" id="download-pdf">
+                                <i class="fas fa-file-pdf"></i> Download PDF
+                            </button>
+                            <button class="btn btn-secondary" id="download-json">
+                                <i class="fas fa-file-code"></i> Download JSON
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 
                 <div id="slides-preview" class="slides-preview">
